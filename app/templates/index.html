@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Harness CD Fleet Monitor - {{ version }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @keyframes pulse-slow {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(1.02); }
+    }
+    .animate-badge {
+      animation: pulse-slow 3s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between font-sans selection:bg-indigo-500 selection:text-white">
+
+  <!-- Header Navigation -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+          <i class="fa-solid fa-satellite-dish text-white text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+            Harness Fleet Monitor
+            <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Live Target</span>
+          </h1>
+          <p class="text-xs text-slate-400">Kubernetes Deployment Verification App</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-3">
+        <div class="flex items-center space-x-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/60 text-xs">
+          <span class="w-2 h-2 rounded-full {{ 'bg-emerald-400 animate-ping' if healthy else 'bg-rose-500' }}"></span>
+          <span class="{{ 'text-emerald-400' if healthy else 'text-rose-400' }} font-medium">
+            {{ "System Healthy" if healthy else "Degraded (Testing Rollback)" }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="max-w-6xl mx-auto px-6 py-10 w-full flex-1">
+    
+    <!-- Hero / Active Release Card -->
+    <div class="rounded-3xl p-8 border border-slate-800 shadow-2xl relative overflow-hidden mb-8"
+         style="background: linear-gradient(135deg, rgba(15,23,42,0.95), rgba(30,41,59,0.8));">
+      
+      <!-- Ambient Glow using APP_COLOR -->
+      <div class="absolute -top-24 -right-24 w-80 h-80 rounded-full blur-3xl opacity-20 pointer-events-none"
+           style="background-color: {{ color }};"></div>
+
+      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
+        <div>
+          <div class="flex items-center gap-3 mb-3">
+            <span class="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border"
+                  style="background-color: {{ color }}22; color: {{ color }}; border-color: {{ color }}55;">
+              <i class="fa-solid fa-code-branch mr-1"></i> Release Active
+            </span>
+            <span class="text-xs text-slate-400">
+              <i class="fa-regular fa-clock mr-1"></i> Last deployed: {{ server_time }}
+            </span>
+          </div>
+          <h2 class="text-4xl md:text-5xl font-black text-white tracking-tight flex items-center gap-3">
+            Version <span style="color: {{ color }};">{{ version }}</span>
+          </h2>
+          <p class="text-slate-400 text-sm mt-2">
+            Orchestrated by <strong class="text-indigo-400">{{ deployed_by }}</strong> pipeline onto Kubernetes cluster.
+          </p>
+        </div>
+
+        <!-- Big Visual Badge for Canary/Rolling Verification -->
+        <div class="p-6 rounded-2xl border border-slate-700/60 bg-slate-900/90 shadow-xl flex flex-col items-center min-w-[200px] animate-badge">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl text-white shadow-lg mb-2"
+               style="background-color: {{ color }}; box-shadow: 0 10px 25px -5px {{ color }}66;">
+            <i class="fa-solid fa-cube"></i>
+          </div>
+          <span class="text-xs text-slate-400 uppercase tracking-widest mt-1">Pod Signature</span>
+          <span class="text-sm font-mono font-bold text-white mt-0.5 truncate max-w-[180px]" title="{{ hostname }}">{{ hostname }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cluster & Deployment Telemetry Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      
+      <!-- Metric 1: Environment -->
+      <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 backdrop-blur-sm">
+        <div class="flex items-center justify-between mb-3 text-slate-400 text-xs font-medium uppercase tracking-wider">
+          <span>Target Environment</span>
+          <i class="fa-solid fa-globe text-indigo-400"></i>
+        </div>
+        <div class="text-2xl font-bold text-white mb-1">{{ environment }}</div>
+        <p class="text-xs text-slate-400">Scoped in Harness CD environment tab</p>
+      </div>
+
+      <!-- Metric 2: Kubernetes Pod Identity -->
+      <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 backdrop-blur-sm">
+        <div class="flex items-center justify-between mb-3 text-slate-400 text-xs font-medium uppercase tracking-wider">
+          <span>Pod Hostname</span>
+          <i class="fa-solid fa-server text-cyan-400"></i>
+        </div>
+        <div class="text-lg font-mono font-semibold text-cyan-300 truncate" title="{{ hostname }}">
+          {{ hostname }}
+        </div>
+        <p class="text-xs text-slate-400 mt-1">Refreshes dynamically across replicas</p>
+      </div>
+
+      <!-- Metric 3: Health Probe Endpoint -->
+      <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 backdrop-blur-sm">
+        <div class="flex items-center justify-between mb-3 text-slate-400 text-xs font-medium uppercase tracking-wider">
+          <span>K8s Health Probe</span>
+          <i class="fa-solid fa-heart-pulse {{ 'text-emerald-400' if healthy else 'text-rose-500' }}"></i>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-lg font-bold {{ 'text-emerald-400' if healthy else 'text-rose-400' }}">
+            {{ "HTTP 200 OK" if healthy else "HTTP 500 FAIL" }}
+          </span>
+          <span class="text-xs text-slate-500">(/healthz)</span>
+        </div>
+        <p class="text-xs text-slate-400 mt-1">Used by Harness verification step</p>
+      </div>
+    </div>
+
+    <!-- Interactive Testing Controls -->
+    <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6">
+      <h3 class="text-sm font-semibold text-white mb-2 flex items-center gap-2">
+        <i class="fa-solid fa-vial-circle-check text-indigo-400"></i>
+        Harness Rollback & Canary Simulator
+      </h3>
+      <p class="text-xs text-slate-400 mb-4">
+        Click below to simulate pod health degradation. This allows you to test whether Harness automatically detects failures and rolls back to the previous stable release.
+      </p>
+      <div class="flex flex-wrap gap-3">
+        <button onclick="toggleHealth()" 
+                class="px-4 py-2 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-2">
+          <i class="fa-solid fa-arrows-rotate"></i>
+          Toggle /healthz Health State
+        </button>
+        <button onclick="window.location.reload()" 
+                class="px-4 py-2 rounded-xl text-xs font-medium bg-indigo-600/80 hover:bg-indigo-600 text-white transition flex items-center gap-2">
+          <i class="fa-solid fa-rotate-right"></i>
+          Refresh Page (Load Balance Across Pods)
+        </button>
+        <a href="/api/info" target="_blank"
+           class="px-4 py-2 rounded-xl text-xs font-medium bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-slate-700/60 transition flex items-center gap-2">
+          <i class="fa-solid fa-code"></i>
+          View /api/info JSON
+        </a>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-900 bg-slate-950 py-4 text-center text-xs text-slate-400">
+    Built for <strong class="text-indigo-400">GitHub Actions (CI)</strong> ➡️ <strong class="text-cyan-400">Harness CD</strong> End-to-End Pipeline Lab
+  </footer>
+
+  <script>
+    async function toggleHealth() {
+      try {
+        const res = await fetch('/api/toggle-health', { method: 'POST' });
+        const data = await res.json();
+        alert('Health state changed! New state: ' + (data.healthy ? 'HEALTHY (HTTP 200)' : 'UNHEALTHY (HTTP 500)'));
+        window.location.reload();
+      } catch (e) {
+        alert('Error: ' + e);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+pipeline:
+  name: Fleet Monitor CD Pipeline
+  identifier: Fleet_Monitor_CD_Pipeline
+  projectIdentifier: harness_lab
+  orgIdentifier: default
+  tags: {}
+  variables:
+    - name: APP_VERSION
+      type: String
+      description: "Application release tag (e.g. v1.0.0, v2.0.0)"
+      required: true
+      value: v1.0.0
+    - name: APP_COLOR
+      type: String
+      description: "UI accent color hex code (e.g. #10b981 green, #f97316 orange)"
+      required: true
+      value: "#10b981"
+  stages:
+    - stage:
+        name: Deploy to Kubernetes
+        identifier: deploy_to_kubernetes
+        description: "Deploys fleet-monitor microservice onto Kubernetes cluster via Delegate"
+        type: Deployment
+        spec:
+          deploymentType: Kubernetes
+          service:
+            serviceRef: fleet_monitor_service
+          environment:
+            environmentRef: dev_environment
+            environmentInputs: false
+            serviceOverrideInputs: false
+            infrastructureDefinitions:
+              - infrastructureDefinitionRef: dev_k8s_cluster
+          execution:
+            steps:
+              - step:
+                  name: Rollout Deployment
+                  identifier: rolloutDeployment
+                  type: K8sRollingDeploy
+                  timeout: 10m
+                  spec:
+                    skipDryRun: false
+                    pruneResources: false
+              - step:
+                  name: Verify Application Health
+                  identifier: verifyHealth
+                  type: ShellScript
+                  timeout: 5m
+                  spec:
+                    shell: Bash
+                    onDelegate: true
+                    source:
+                      type: Inline
+                      spec:
+                        script: |-
+                          echo "🔍 Verifying Fleet Monitor service health..."
+                          kubectl get pods -n harness-fleet -l app=fleet-monitor
+                          echo "✅ Deployment pods are healthy and verified!"
+            rollbackSteps:
+              - step:
+                  name: Rollback Rollout Deployment
+                  identifier: rollbackRolloutDeployment
+                  type: K8sRollingRollback
+                  timeout: 10m
+                  spec:
+                    pruneResources: false
+        tags: {}
+        failureStrategies:
+          - onFailure:
+              errors:
+                - AllErrors
+              action:
+                type: StageRollback

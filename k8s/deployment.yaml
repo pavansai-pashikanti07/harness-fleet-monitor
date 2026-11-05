@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fleet-monitor
+  namespace: harness-fleet
+  labels:
+    app: fleet-monitor
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: fleet-monitor
+  template:
+    metadata:
+      labels:
+        app: fleet-monitor
+    spec:
+      containers:
+      - name: fleet-app
+        # Harness automatically replaces <+artifact.image> with the deployed artifact tag
+        image: <+artifact.image>
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: APP_VERSION
+          value: "<+pipeline.variables.APP_VERSION>"
+        - name: APP_ENVIRONMENT
+          value: "<+env.name>"
+        - name: APP_COLOR
+          value: "<+pipeline.variables.APP_COLOR>"
+        - name: DEPLOYED_BY
+          value: "Harness CD Pipeline"
+        resources:
+          limits:
+            cpu: "200m"
+            memory: "128Mi"
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
