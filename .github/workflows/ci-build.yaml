@@ -13,9 +13,13 @@ on:
         required: true
         default: 'v1.0.0'
 
+permissions:
+  contents: read
+  packages: write
+
 env:
-  # Replace with your Docker Hub username or keep as repository secret
-  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME || 'pavan' }}/harness-fleet-monitor
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ghcr.io/${{ github.repository }}
 
 jobs:
   build-and-push:
@@ -29,38 +33,41 @@ jobs:
       - name: ⚙️ Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: 🔐 Log in to Docker Hub
-        if: env.IMAGE_NAME != ''
+      - name: 🔐 Log in to GitHub Container Registry (GHCR)
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 🏷️ Calculate Image Tags
         id: meta
         run: |
           VERSION="${{ github.event.inputs.version_tag || 'v1.0.0' }}"
           SHORT_SHA=$(git rev-parse --short HEAD)
+          LOWERCASE_IMAGE=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "sha_tag=$SHORT_SHA" >> $GITHUB_OUTPUT
+          echo "image=$LOWERCASE_IMAGE" >> $GITHUB_OUTPUT
 
-      - name: 🐳 Build and Push Image to Docker Hub
+      - name: 🐳 Build and Push Image to GHCR
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
-          push: ${{ secrets.DOCKERHUB_USERNAME != '' }}
+          push: true
           tags: |
-            ${{ env.IMAGE_NAME }}:latest
-            ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
-            ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.sha_tag }}
+            ${{ steps.meta.outputs.image }}:latest
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.sha_tag }}
           build-args: |
             APP_VERSION=${{ steps.meta.outputs.version }}
 
       - name: 📋 CI Summary
         run: |
           echo "### 🚀 CI Build Successful!" >> $GITHUB_STEP_SUMMARY
-          echo "- **Image:** \`${{ env.IMAGE_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Registry:** \`ghcr.io\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image:** \`${{ steps.meta.outputs.image }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Version Tag:** \`${{ steps.meta.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Git SHA Tag:** \`${{ steps.meta.outputs.sha_tag }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Target for Harness CD:** Ready for deployment via Harness Delegate!" >> $GITHUB_STEP_SUMMARY

@@ -82,3 +82,4 @@ Go to your GitHub repo ➡️ **Settings** ➡️ **Secrets and variables** ➡�
 
 ### Step 3: Run Harness CD Pipeline
 Import or configure the pipeline in Harness using `k8s/` manifests and your Docker Hub image.
+
