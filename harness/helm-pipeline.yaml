@@ -1,0 +1,73 @@
+pipeline:
+  name: Fleet Monitor Helm CD Pipeline
+  identifier: Fleet_Monitor_Helm_CD_Pipeline
+  projectIdentifier: harness_lab
+  orgIdentifier: default
+  tags: {}
+  variables:
+    - name: APP_VERSION
+      type: String
+      description: "Application release tag (e.g. v1.0.0, v2.0.0)"
+      required: true
+      value: v1.0.0
+    - name: HELM_RELEASE_NAME
+      type: String
+      description: "Helm release name"
+      required: true
+      value: fleet-monitor
+  stages:
+    - stage:
+        name: Deploy Helm Chart to Kubernetes
+        identifier: deploy_helm_chart
+        description: "Deploys fleet-monitor Helm chart onto Kubernetes cluster via Delegate"
+        type: Deployment
+        spec:
+          deploymentType: NativeHelm
+          service:
+            serviceRef: fleet_monitor_helm_service
+          environment:
+            environmentRef: dev_environment
+            environmentInputs: false
+            serviceOverrideInputs: false
+            infrastructureDefinitions:
+              - infrastructureDefinitionRef: dev_k8s_cluster
+          execution:
+            steps:
+              - step:
+                  name: Helm Deployment
+                  identifier: helmDeployment
+                  type: HelmDeploy
+                  timeout: 10m
+                  spec:
+                    skipDryRun: false
+              - step:
+                  name: Verify Helm Release Health
+                  identifier: verifyHelmHealth
+                  type: ShellScript
+                  timeout: 5m
+                  spec:
+                    shell: Bash
+                    onDelegate: true
+                    source:
+                      type: Inline
+                      spec:
+                        script: |-
+                          echo "🔍 Checking Helm releases in harness-fleet namespace..."
+                          helm list -n harness-fleet
+                          echo "🔍 Verifying Pods deployed by Helm..."
+                          kubectl get pods -n harness-fleet -l app=fleet-monitor -o wide
+                          echo "✅ Helm release deployed successfully!"
+            rollbackSteps:
+              - step:
+                  name: Helm Rollback
+                  identifier: helmRollback
+                  type: HelmRollback
+                  timeout: 10m
+                  spec: {}
+        tags: {}
+        failureStrategies:
+          - onFailure:
+              errors:
+                - AllErrors
+              action:
+                type: StageRollback

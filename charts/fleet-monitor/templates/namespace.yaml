@@ -1,0 +1,8 @@
+{{- if .Values.createNamespace }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.namespace | default "harness-fleet" }}
+  labels:
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end }}

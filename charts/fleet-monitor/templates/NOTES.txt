@@ -1,0 +1,9 @@
+🚀 1. Fleet Monitor has been successfully deployed with Helm!
+
+Get the application URL:
+{{- if eq .Values.service.type "NodePort" }}
+  NodePort: {{ .Values.service.nodePort }}
+  Target Namespace: {{ .Values.namespace }}
+  Check Pods:
+    kubectl get pods -n {{ .Values.namespace }} -l {{ include "fleet-monitor.selectorLabels" . }}
+{{- end }}

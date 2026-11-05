@@ -1,0 +1,47 @@
+# Default values for fleet-monitor Helm Chart.
+
+replicaCount: 2
+
+image:
+  repository: ghcr.io/pavansai-pashikanti07/harness-fleet-monitor
+  pullPolicy: IfNotPresent
+  # Overridden by Harness <+artifact.tag> during deployment
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: "fleet-monitor"
+
+service:
+  type: NodePort
+  port: 8080
+  targetPort: 8080
+  nodePort: 30080
+
+appConfig:
+  version: "v1.0.0"
+  environment: "dev"
+  color: "#10b981"
+  deployedBy: "Harness CD Helm Release"
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+probes:
+  liveness:
+    path: /healthz
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  readiness:
+    path: /healthz
+    initialDelaySeconds: 5
+    periodSeconds: 5
+
+# Set to true if creating namespace in Helm
+createNamespace: true
+namespace: harness-fleet

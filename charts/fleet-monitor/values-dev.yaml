@@ -1,0 +1,15 @@
+# Environment override values for DEV environment in Harness
+replicaCount: 1
+
+appConfig:
+  environment: "dev"
+  color: "#10b981" # Emerald Green
+  deployedBy: "Harness CD (Dev Pipeline)"
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 64Mi
+  requests:
+    cpu: 25m
+    memory: 32Mi

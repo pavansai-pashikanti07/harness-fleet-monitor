@@ -1,0 +1,15 @@
+# Environment override values for PROD environment in Harness
+replicaCount: 3
+
+appConfig:
+  environment: "production"
+  color: "#3b82f6" # Royal Blue
+  deployedBy: "Harness CD (Prod Pipeline)"
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
